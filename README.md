@@ -1,1 +1,1 @@
-A tiny LLM
+A tiny LLM based on https://github.com/rasbt/LLMs-from-scratch
