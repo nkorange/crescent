@@ -147,7 +147,7 @@ targets_flat = targets.flatten()
 loss = torch.nn.functional.cross_entropy(logits_flat, targets_flat)
 print(loss)
 
-file_path = "the-verdict.txt"
+file_path = "../the-verdict.txt"
 with open(file_path, "r", encoding="utf-8") as file:
 	text_data = file.read()
 total_characters = len(text_data)
@@ -220,7 +220,7 @@ toekn_ids = generate(model=model, idx=text_to_token_ids("Every effort moves you"
 print("Output text:\n", token_ids_to_text(token_ids, tokenizer))
 
 
-settings, params = download_and_load_gpt2(model_size="124M", models_dir="gpt2")
+settings, params = download_and_load_gpt2(model_size="124M", models_dir="../gpt2")
 
 
 

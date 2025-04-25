@@ -13,8 +13,8 @@ from torch.utils.data import DataLoader
 from gpt_download import download_and_load_gpt2
 
 url = "https://archive.ics.uci.edu/static/public/228/sms+spam+collection.zip"
-zip_path = "sms_spam_collection.zip"
-extracted_path = "sms_spam_collection"
+zip_path = "../sms_spam_collection.zip"
+extracted_path = "../sms_spam_collection"
 data_file_path = Path(extracted_path) / "SMSSpamCollection.tsv"
 
 
@@ -426,9 +426,9 @@ class GPTModel(nn.Module):
         return logits
 
 tokenizer = tiktoken.get_encoding("gpt2")
-train_dataset = SpamDataset(csv_file="train.csv", max_length=None, tokenizer=tokenizer)
-val_dataset = SpamDataset(csv_file="validation.csv", max_length=train_dataset.max_length, tokenizer=tokenizer)
-test_dataset = SpamDataset(csv_file="test.csv", max_length=train_dataset.max_length, tokenizer=tokenizer)
+train_dataset = SpamDataset(csv_file="../train.csv", max_length=None, tokenizer=tokenizer)
+val_dataset = SpamDataset(csv_file="../validation.csv", max_length=train_dataset.max_length, tokenizer=tokenizer)
+test_dataset = SpamDataset(csv_file="../test.csv", max_length=train_dataset.max_length, tokenizer=tokenizer)
 
 num_workers = 0
 batch_size = 8
@@ -455,7 +455,7 @@ model_configs = {
 BASE_CONFIG.update(model_configs[CHOOSE_MODEL])
 
 model_size = CHOOSE_MODEL.split(" ")[-1].lstrip("(").rstrip(")")
-settings, params = download_and_load_gpt2(model_size=model_size, models_dir="gpt2")
+settings, params = download_and_load_gpt2(model_size=model_size, models_dir="../gpt2")
 
 model = GPTModel(BASE_CONFIG)
 load_weights_into_gpt(model, params)
@@ -500,6 +500,6 @@ text_2 = (
 )
 print(classify_review(text_2, model, tokenizer, device, max_length=train_dataset.max_length))
 
-torch.save(model.state_dict(), "review_classifier.pth")
+torch.save(model.state_dict(), "../review_classifier.pth")
 #model_state_dict = torch.load("review_classifier.pth, map_location=device")
 #model.load_state_dict(model_state_dict)
