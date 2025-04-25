@@ -28,28 +28,10 @@ model_state_dict = torch.load("spam_classifier.pth", map_location=device)
 model.load_state_dict(model_state_dict)
 model.eval()
 
-# text_1 = (
-#     "You are a winner you have been specially"
-#     " selected to receive $1000 cash or a $2000 award."
-# )
-#
-# print(classify_review(
-#     text_1, model, tokenizer, device, max_length=120
-# ))
-#
-# text_2 = (
-#     "Hey, just wanted to check if we're still on"
-#     " for dinner tonight? Let me know!"
-# )
-#
-# print(classify_review(
-#     text_2, model, tokenizer, device, max_length=120
-# ))
-
 print("Hi, I'm a robot to detect SPAM texts, please the text you want to detect if it's SPAM. Input exit to end the conversation.")
 while True:
     user_input = input("You: ")
-    if user_input.lower() in ['退出', 'exit', 'quit']:
+    if user_input.lower() in ['exit', 'quit']:
         print("Robot: Bye!")
         break
     else:
