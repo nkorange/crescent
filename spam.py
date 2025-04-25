@@ -618,167 +618,161 @@ def classify_review(text, model, tokenizer, device, max_length=None, pad_token_i
     # Return the classified result
     return "spam" if predicted_label == 1 else "not spam"
 
-tokenizer = tiktoken.get_encoding("gpt2")
 
-train_dataset = SpamDataset(
-    csv_file="train.csv",
-    max_length=None,
-    tokenizer=tokenizer
-)
+def spam_entry():
+    tokenizer = tiktoken.get_encoding("gpt2")
 
-val_dataset = SpamDataset(
-    csv_file="validation.csv",
-    max_length=train_dataset.max_length,
-    tokenizer=tokenizer
-)
-test_dataset = SpamDataset(
-    csv_file="test.csv",
-    max_length=train_dataset.max_length,
-    tokenizer=tokenizer
-)
+    train_dataset = SpamDataset(
+        csv_file="train.csv",
+        max_length=None,
+        tokenizer=tokenizer
+    )
 
-num_workers = 0
-batch_size = 8
+    val_dataset = SpamDataset(
+        csv_file="validation.csv",
+        max_length=train_dataset.max_length,
+        tokenizer=tokenizer
+    )
+    test_dataset = SpamDataset(
+        csv_file="test.csv",
+        max_length=train_dataset.max_length,
+        tokenizer=tokenizer
+    )
 
-torch.manual_seed(123)
+    num_workers = 0
+    batch_size = 8
 
-train_loader = DataLoader(
-    dataset=train_dataset,
-    batch_size=batch_size,
-    shuffle=True,
-    num_workers=num_workers,
-    drop_last=True,
-)
+    torch.manual_seed(123)
 
-val_loader = DataLoader(
-    dataset=val_dataset,
-    batch_size=batch_size,
-    num_workers=num_workers,
-    drop_last=False,
-)
+    train_loader = DataLoader(
+        dataset=train_dataset,
+        batch_size=batch_size,
+        shuffle=True,
+        num_workers=num_workers,
+        drop_last=True,
+    )
 
-test_loader = DataLoader(
-    dataset=test_dataset,
-    batch_size=batch_size,
-    num_workers=num_workers,
-    drop_last=False,
-)
+    val_loader = DataLoader(
+        dataset=val_dataset,
+        batch_size=batch_size,
+        num_workers=num_workers,
+        drop_last=False,
+    )
 
-CHOOSE_MODEL = "gpt2-small (124M)"
-INPUT_PROMPT = "Every effort moves"
+    test_loader = DataLoader(
+        dataset=test_dataset,
+        batch_size=batch_size,
+        num_workers=num_workers,
+        drop_last=False,
+    )
 
-BASE_CONFIG = {
-    "vocab_size": 50257,     # Vocabulary size
-    "context_length": 1024,  # Context length
-    "drop_rate": 0.0,        # Dropout rate
-    "qkv_bias": True         # Query-key-value bias
-}
+    CHOOSE_MODEL = "gpt2-small (124M)"
+    INPUT_PROMPT = "Every effort moves"
 
-model_configs = {
-    "gpt2-small (124M)": {"emb_dim": 768, "n_layers": 12, "n_heads": 12},
-    "gpt2-medium (355M)": {"emb_dim": 1024, "n_layers": 24, "n_heads": 16},
-    "gpt2-large (774M)": {"emb_dim": 1280, "n_layers": 36, "n_heads": 20},
-    "gpt2-xl (1558M)": {"emb_dim": 1600, "n_layers": 48, "n_heads": 25},
-}
+    BASE_CONFIG = {
+        "vocab_size": 50257,     # Vocabulary size
+        "context_length": 1024,  # Context length
+        "drop_rate": 0.0,        # Dropout rate
+        "qkv_bias": True         # Query-key-value bias
+    }
 
-BASE_CONFIG.update(model_configs[CHOOSE_MODEL])
-model_size = CHOOSE_MODEL.split(" ")[-1].lstrip("(").rstrip(")")
-settings, params = download_and_load_gpt2(model_size=model_size, models_dir="gpt2")
+    model_configs = {
+        "gpt2-small (124M)": {"emb_dim": 768, "n_layers": 12, "n_heads": 12},
+        "gpt2-medium (355M)": {"emb_dim": 1024, "n_layers": 24, "n_heads": 16},
+        "gpt2-large (774M)": {"emb_dim": 1280, "n_layers": 36, "n_heads": 20},
+        "gpt2-xl (1558M)": {"emb_dim": 1600, "n_layers": 48, "n_heads": 25},
+    }
 
-model = GPTModel(BASE_CONFIG)
-load_weights_into_gpt(model, params)
-model.eval()
-
-for param in model.parameters():
-    param.requires_grad = False
-
-torch.manual_seed(123)
-
-num_classes = 2
-model.out_head = torch.nn.Linear(in_features=BASE_CONFIG["emb_dim"], out_features=num_classes)
-
-for param in model.trf_blocks[-1].parameters():
-    param.requires_grad = True
-
-for param in model.final_norm.parameters():
-    param.requires_grad = True
+    BASE_CONFIG.update(model_configs[CHOOSE_MODEL])
+    model_size = CHOOSE_MODEL.split(" ")[-1].lstrip("(").rstrip(")")
+    settings, params = download_and_load_gpt2(model_size=model_size, models_dir="gpt2")
 
 
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-# Note:
-# Uncommenting the following lines will allow the code to run on Apple Silicon chips, if applicable,
-# which is approximately 2x faster than on an Apple CPU (as measured on an M3 MacBook Air).
-# As of this writing, in PyTorch 2.4, the results obtained via CPU and MPS were identical.
-# However, in earlier versions of PyTorch, you may observe different results when using MPS.
+    model = GPTModel(BASE_CONFIG)
+    # model_state_dict = torch.load("spam_classifier.pth, map_location=device")
+    # model.load_state_dict(model_state_dict)
+    load_weights_into_gpt(model, params)
+    model.eval()
 
-#if torch.cuda.is_available():
-#    device = torch.device("cuda")
-#elif torch.backends.mps.is_available():
-#    device = torch.device("mps")
-#else:
-#    device = torch.device("cpu")
-#print(f"Running on {device} device.")
+    for param in model.parameters():
+        param.requires_grad = False
 
-model.to(device) # no assignment model = model.to(device) necessary for nn.Module classes
+    torch.manual_seed(123)
 
-torch.manual_seed(123) # For reproducibility due to the shuffling in the training data loader
+    num_classes = 2
+    model.out_head = torch.nn.Linear(in_features=BASE_CONFIG["emb_dim"], out_features=num_classes)
 
-train_accuracy = calc_accuracy_loader(train_loader, model, device, num_batches=10)
-val_accuracy = calc_accuracy_loader(val_loader, model, device, num_batches=10)
-test_accuracy = calc_accuracy_loader(test_loader, model, device, num_batches=10)
+    for param in model.trf_blocks[-1].parameters():
+        param.requires_grad = True
 
-print(f"Training accuracy: {train_accuracy*100:.2f}%")
-print(f"Validation accuracy: {val_accuracy*100:.2f}%")
-print(f"Test accuracy: {test_accuracy*100:.2f}%")
+    for param in model.final_norm.parameters():
+        param.requires_grad = True
 
-with torch.no_grad(): # Disable gradient tracking for efficiency because we are not training, yet
-    train_loss = calc_loss_loader(train_loader, model, device, num_batches=5)
-    val_loss = calc_loss_loader(val_loader, model, device, num_batches=5)
-    test_loss = calc_loss_loader(test_loader, model, device, num_batches=5)
 
-print(f"Training loss: {train_loss:.3f}")
-print(f"Validation loss: {val_loss:.3f}")
-print(f"Test loss: {test_loss:.3f}")
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-start_time = time.time()
+    model.to(device) # no assignment model = model.to(device) necessary for nn.Module classes
 
-torch.manual_seed(123)
+    torch.manual_seed(123) # For reproducibility due to the shuffling in the training data loader
 
-optimizer = torch.optim.AdamW(model.parameters(), lr=5e-5, weight_decay=0.1)
+    train_accuracy = calc_accuracy_loader(train_loader, model, device, num_batches=10)
+    val_accuracy = calc_accuracy_loader(val_loader, model, device, num_batches=10)
+    test_accuracy = calc_accuracy_loader(test_loader, model, device, num_batches=10)
 
-num_epochs = 5
-train_losses, val_losses, train_accs, val_accs, examples_seen = train_classifier_simple(
-    model, train_loader, val_loader, optimizer, device,
-    num_epochs=num_epochs, eval_freq=50, eval_iter=5,
-)
+    print(f"Training accuracy: {train_accuracy*100:.2f}%")
+    print(f"Validation accuracy: {val_accuracy*100:.2f}%")
+    print(f"Test accuracy: {test_accuracy*100:.2f}%")
 
-end_time = time.time()
-execution_time_minutes = (end_time - start_time) / 60
-print(f"Training completed in {execution_time_minutes:.2f} minutes.")
+    with torch.no_grad(): # Disable gradient tracking for efficiency because we are not training, yet
+        train_loss = calc_loss_loader(train_loader, model, device, num_batches=5)
+        val_loss = calc_loss_loader(val_loader, model, device, num_batches=5)
+        test_loss = calc_loss_loader(test_loader, model, device, num_batches=5)
 
-train_accuracy = calc_accuracy_loader(train_loader, model, device)
-val_accuracy = calc_accuracy_loader(val_loader, model, device)
-test_accuracy = calc_accuracy_loader(test_loader, model, device)
+    print(f"Training loss: {train_loss:.3f}")
+    print(f"Validation loss: {val_loss:.3f}")
+    print(f"Test loss: {test_loss:.3f}")
 
-print(f"Training accuracy: {train_accuracy*100:.2f}%")
-print(f"Validation accuracy: {val_accuracy*100:.2f}%")
-print(f"Test accuracy: {test_accuracy*100:.2f}%")
+    start_time = time.time()
 
-text_1 = (
-    "You are a winner you have been specially"
-    " selected to receive $1000 cash or a $2000 award."
-)
+    torch.manual_seed(123)
 
-print(classify_review(
-    text_1, model, tokenizer, device, max_length=train_dataset.max_length
-))
+    optimizer = torch.optim.AdamW(model.parameters(), lr=5e-5, weight_decay=0.1)
 
-text_2 = (
-    "Hey, just wanted to check if we're still on"
-    " for dinner tonight? Let me know!"
-)
+    num_epochs = 5
+    train_losses, val_losses, train_accs, val_accs, examples_seen = train_classifier_simple(
+        model, train_loader, val_loader, optimizer, device,
+        num_epochs=num_epochs, eval_freq=50, eval_iter=5,
+    )
 
-print(classify_review(
-    text_2, model, tokenizer, device, max_length=train_dataset.max_length
-))
+    end_time = time.time()
+    execution_time_minutes = (end_time - start_time) / 60
+    print(f"Training completed in {execution_time_minutes:.2f} minutes.")
+
+    train_accuracy = calc_accuracy_loader(train_loader, model, device)
+    val_accuracy = calc_accuracy_loader(val_loader, model, device)
+    test_accuracy = calc_accuracy_loader(test_loader, model, device)
+
+    print(f"Training accuracy: {train_accuracy*100:.2f}%")
+    print(f"Validation accuracy: {val_accuracy*100:.2f}%")
+    print(f"Test accuracy: {test_accuracy*100:.2f}%")
+
+    torch.save(model.state_dict(), "./spam_classifier.pth")
+
+    text_1 = (
+        "You are a winner you have been specially"
+        " selected to receive $1000 cash or a $2000 award."
+    )
+
+    print(classify_review(
+        text_1, model, tokenizer, device, max_length=train_dataset.max_length
+    ))
+
+    text_2 = (
+        "Hey, just wanted to check if we're still on"
+        " for dinner tonight? Let me know!"
+    )
+
+    print(classify_review(
+        text_2, model, tokenizer, device, max_length=train_dataset.max_length
+    ))
